@@ -33,6 +33,16 @@ jobs:
 
       - name: Setup Android SDK Platform 37
         run: |
+          if [ -d "$ANDROID_HOME/cmdline-tools/latest/bin" ]; then
+            export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
+            echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          else
+            CMDLINE_BIN="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f 2>/dev/null | head -n 1 | xargs dirname 2>/dev/null)"
+            if [ -n "$CMDLINE_BIN" ]; then
+              export PATH="$CMDLINE_BIN:$PATH"
+              echo "$CMDLINE_BIN" >> $GITHUB_PATH
+            fi
+          fi
           yes | sdkmanager --licenses || true
           sdkmanager "platforms;android-37.0"
           cp -r "$ANDROID_HOME/platforms/android-37.0" "$ANDROID_HOME/platforms/android-37"
