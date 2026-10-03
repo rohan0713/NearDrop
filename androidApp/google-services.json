@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "100000000000",
+    "project_number": "107890352208",
     "project_id": "neardrop-968eb",
-    "storage_bucket": "neardrop-968eb.appspot.com"
+    "storage_bucket": "neardrop-968eb.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:100000000000:android:neardropandroidapp",
+        "mobilesdk_app_id": "1:107890352208:android:4329ca640f57eb44a6f155",
         "android_client_info": {
-          "package_name": "com.rohan.neardrop.android"
+          "package_name": "com.drop.near"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyFakeKeyForNearDropFirebaseSetup"
+          "current_key": "AIzaSyC-4MhGhmCqMvks4TmAhJ00SObi_0e4DjQ"
         }
       ],
       "services": {

@@ -10,7 +10,7 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.rohan.neardrop.android"
+        applicationId = "com.drop.near"
         minSdk = 24
         targetSdk = 34
         versionCode = 1
