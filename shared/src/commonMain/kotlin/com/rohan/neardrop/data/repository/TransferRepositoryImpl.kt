@@ -86,6 +86,62 @@ class TransferRepositoryImpl(
         AppResult.Success(Unit)
     }
 
+    override suspend fun updateTransferProgress(
+        transferId: String,
+        bytesTransferred: Long,
+        speedBytesPerSec: Long
+    ): AppResult<Unit> = mutex.withLock {
+        _transfers.update { list ->
+            list.map { item ->
+                if (item.id == transferId) {
+                    val progress = if (item.fileSizeBytes > 0) {
+                        (bytesTransferred.toFloat() / item.fileSizeBytes.toFloat()).coerceIn(0f, 1f)
+                    } else 0f
+                    item.copy(
+                        bytesTransferred = bytesTransferred,
+                        status = TransferStatus.InProgress(progress, speedBytesPerSec)
+                    )
+                } else {
+                    item
+                }
+            }
+        }
+        AppResult.Success(Unit)
+    }
+
+    override suspend fun completeTransfer(transferId: String): AppResult<Unit> = mutex.withLock {
+        activeJobs[transferId]?.cancel()
+        activeJobs.remove(transferId)
+        _transfers.update { list ->
+            list.map { item ->
+                if (item.id == transferId) {
+                    item.copy(
+                        bytesTransferred = item.fileSizeBytes,
+                        status = TransferStatus.Completed(currentTimeEpoch())
+                    )
+                } else {
+                    item
+                }
+            }
+        }
+        AppResult.Success(Unit)
+    }
+
+    override suspend fun failTransfer(transferId: String, reason: String): AppResult<Unit> = mutex.withLock {
+        activeJobs[transferId]?.cancel()
+        activeJobs.remove(transferId)
+        _transfers.update { list ->
+            list.map { item ->
+                if (item.id == transferId) {
+                    item.copy(status = TransferStatus.Failed(reason))
+                } else {
+                    item
+                }
+            }
+        }
+        AppResult.Success(Unit)
+    }
+
     private suspend fun simulateTransferProgress(transferId: String, totalBytes: Long) {
         val chunkSize = (totalBytes / 10).coerceAtLeast(1024L)
         var transferred = 0L
