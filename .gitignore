@@ -4,6 +4,7 @@
 /build
 /*/build
 local.properties
+keystore.properties
 .idea
 .DS_Store
 *.apk

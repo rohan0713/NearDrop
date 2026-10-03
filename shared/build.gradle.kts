@@ -42,8 +42,8 @@ kotlin {
 }
 
 android {
-    namespace = "com.rohan.neardrop.shared"
-    compileSdk = 34
+    namespace = "com.drop.near.shared"
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 24

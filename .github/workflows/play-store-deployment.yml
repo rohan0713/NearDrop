@@ -15,6 +15,9 @@ jobs:
     name: Build & Publish Release Bundle
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      PLAY_STORE_KEYSTORE_BASE64: ${{ secrets.PLAY_STORE_KEYSTORE_BASE64 }}
+      PLAY_STORE_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
 
     steps:
       - name: Checkout Code
@@ -34,7 +37,7 @@ jobs:
         run: ./gradlew test
 
       - name: Setup Production Keystore
-        if: ${{ secrets.PLAY_STORE_KEYSTORE_BASE64 != '' }}
+        if: ${{ env.PLAY_STORE_KEYSTORE_BASE64 != '' }}
         env:
           KEYSTORE_BASE64: ${{ secrets.PLAY_STORE_KEYSTORE_BASE64 }}
         run: |
@@ -57,7 +60,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload to Google Play Store
-        if: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON != '' }}
+        if: ${{ env.PLAY_STORE_SERVICE_ACCOUNT_JSON != '' }}
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}

@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -6,14 +9,14 @@ plugins {
 }
 
 android {
-    namespace = "com.rohan.neardrop.android"
-    compileSdk = 34
+    namespace = "com.drop.near"
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.drop.near"
         minSdk = 24
-        targetSdk = 34
-        versionCode = 1
+        targetSdk = 37
+        versionCode = 2
         versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -21,12 +24,41 @@ android {
 
     signingConfigs {
         create("release") {
-            val keystorePath = System.getenv("KEYSTORE_FILE")
-            if (keystorePath != null && file(keystorePath).exists()) {
-                storeFile = file(keystorePath)
-                storePassword = System.getenv("KEYSTORE_PASSWORD")
-                keyAlias = System.getenv("KEY_ALIAS")
-                keyPassword = System.getenv("KEY_PASSWORD")
+            val keystorePropertiesFile = file("keystore.properties").takeIf { it.exists() }
+                ?: rootProject.file("keystore.properties").takeIf { it.exists() }
+            val keystoreProperties = Properties().apply {
+                if (keystorePropertiesFile != null) {
+                    load(FileInputStream(keystorePropertiesFile))
+                }
+            }
+
+            val localPropertiesFile = rootProject.file("local.properties")
+            val localProperties = Properties().apply {
+                if (localPropertiesFile.exists()) {
+                    load(FileInputStream(localPropertiesFile))
+                }
+            }
+
+            fun findProp(propKey: String, envKey: String): String? {
+                return keystoreProperties.getProperty(propKey)
+                    ?: localProperties.getProperty(propKey)
+                    ?: System.getenv(envKey)
+            }
+
+            val rawStorePath = findProp("storeFile", "KEYSTORE_FILE")
+                ?: (if (file("release.keystore").exists()) file("release.keystore").absolutePath else null)
+                ?: (if (rootProject.file("release.keystore").exists()) rootProject.file("release.keystore").absolutePath else null)
+
+            val resolvedKeystoreFile = rawStorePath?.let { path ->
+                val directFile = file(path)
+                if (directFile.exists()) directFile else rootProject.file(path).takeIf { it.exists() }
+            }
+
+            if (resolvedKeystoreFile != null && resolvedKeystoreFile.exists()) {
+                storeFile = resolvedKeystoreFile
+                storePassword = findProp("storePassword", "KEYSTORE_PASSWORD")
+                keyAlias = findProp("keyAlias", "KEY_ALIAS")
+                keyPassword = findProp("keyPassword", "KEY_PASSWORD")
             } else {
                 // Fallback to debug keystore for development / testing builds
                 initWith(getByName("debug"))
@@ -36,7 +68,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
