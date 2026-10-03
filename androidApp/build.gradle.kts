@@ -63,5 +63,7 @@ dependencies {
     implementation(libs.firebase.analytics)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
+
+    testImplementation(libs.kotlin.test)
 }
 

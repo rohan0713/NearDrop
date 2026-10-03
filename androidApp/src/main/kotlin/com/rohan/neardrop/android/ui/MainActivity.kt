@@ -39,6 +39,7 @@ fun NearDropNavHost() {
         Screen.DEVICE_LIST -> {
             DeviceListScreen(
                 viewModel = deviceListViewModel,
+                transferViewModel = transferViewModel,
                 onNavigateToTransfers = { currentScreen = Screen.TRANSFERS }
             )
         }

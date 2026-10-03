@@ -33,4 +33,23 @@ interface TransferRepository {
      * Clears finished (completed, failed, cancelled) transfers from session history.
      */
     suspend fun clearFinishedTransfers(): AppResult<Unit>
+
+    /**
+     * Updates ongoing transfer progress and throughput speed.
+     */
+    suspend fun updateTransferProgress(
+        transferId: String,
+        bytesTransferred: Long,
+        speedBytesPerSec: Long = 0L
+    ): AppResult<Unit> = AppResult.Success(Unit)
+
+    /**
+     * Marks a transfer as successfully completed.
+     */
+    suspend fun completeTransfer(transferId: String): AppResult<Unit> = AppResult.Success(Unit)
+
+    /**
+     * Marks a transfer as failed with an explanatory reason.
+     */
+    suspend fun failTransfer(transferId: String, reason: String): AppResult<Unit> = AppResult.Success(Unit)
 }
