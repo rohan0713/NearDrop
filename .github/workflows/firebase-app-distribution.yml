@@ -49,7 +49,8 @@ jobs:
           appId: ${{ secrets.FIREBASE_APP_ID || '1:107890352208:android:4329ca640f57eb44a6f155' }}
           serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CREDENTIALS }}
           token: ${{ secrets.FIREBASE_TOKEN }}
-          groups: ${{ secrets.FIREBASE_TESTER_GROUPS || 'internal-testers' }}
+          groups: ${{ secrets.FIREBASE_TESTER_GROUPS }}
+          testers: ${{ secrets.FIREBASE_TESTERS }}
           file: androidApp/build/outputs/apk/debug/androidApp-debug.apk
           releaseNotes: |
             Commit: ${{ github.sha }}
