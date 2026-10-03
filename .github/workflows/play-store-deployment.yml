@@ -33,6 +33,14 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      - name: Setup Android SDK Platform 37
+        run: |
+          yes | sdkmanager --licenses || true
+          sdkmanager "platforms;android-37.0"
+          cp -r "$ANDROID_HOME/platforms/android-37.0" "$ANDROID_HOME/platforms/android-37"
+          sed -i 's/37\.0/37/g' "$ANDROID_HOME/platforms/android-37/source.properties"
+          sed -i 's/37\.0/37/g' "$ANDROID_HOME/platforms/android-37/package.xml"
+
       - name: Run Unit Tests
         run: ./gradlew test
 

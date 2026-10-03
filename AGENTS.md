@@ -14,6 +14,8 @@
 - **Application ID / Package Name:** `com.drop.near`
 - **JDK Target:** JDK 17 (Temurin recommended)
 - **Android SDK Targets:** `compileSdk = 37`, `targetSdk = 37`, `minSdk = 24`
+- **Gradle Version:** `8.11.1`
+- **Android Gradle Plugin (AGP):** `8.9.3`
 
 ### UI Paradigm: Strictly Native (No Shared UI)
 - **NO Shared UI:** Under no circumstances should Compose Multiplatform or shared UI frameworks be introduced into `shared/`.
