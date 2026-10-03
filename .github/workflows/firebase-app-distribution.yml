@@ -46,7 +46,7 @@ jobs:
       - name: Distribute to Firebase App Distribution
         uses: wzieba/Firebase-Distribution-Github-Action@v1
         with:
-          appId: ${{ secrets.FIREBASE_APP_ID }}
+          appId: ${{ secrets.FIREBASE_APP_ID || '1:107890352208:android:4329ca640f57eb44a6f155' }}
           serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CREDENTIALS }}
           token: ${{ secrets.FIREBASE_TOKEN }}
           groups: ${{ secrets.FIREBASE_TESTER_GROUPS || 'internal-testers' }}
