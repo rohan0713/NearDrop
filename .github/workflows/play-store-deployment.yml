@@ -15,6 +15,9 @@ jobs:
     name: Build & Publish Release Bundle
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      PLAY_STORE_KEYSTORE_BASE64: ${{ secrets.PLAY_STORE_KEYSTORE_BASE64 || secrets.RELEASE_KEYSTORE_BASE64 }}
+      PLAY_STORE_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON || secrets.PLAY_STORE_JSON_KEY }}
 
     steps:
       - name: Checkout Code
@@ -30,23 +33,46 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      - name: Setup Android SDK Platform 37
+        run: |
+          if [ -d "$ANDROID_HOME/cmdline-tools/latest/bin" ]; then
+            export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
+            echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          else
+            CMDLINE_BIN="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f 2>/dev/null | head -n 1 | xargs dirname 2>/dev/null)"
+            if [ -n "$CMDLINE_BIN" ]; then
+              export PATH="$CMDLINE_BIN:$PATH"
+              echo "$CMDLINE_BIN" >> $GITHUB_PATH
+            fi
+          fi
+          yes | sdkmanager --licenses || true
+          sdkmanager "platforms;android-37.0"
+          cp -r "$ANDROID_HOME/platforms/android-37.0" "$ANDROID_HOME/platforms/android-37"
+          sed -i 's/37\.0/37/g' "$ANDROID_HOME/platforms/android-37/source.properties"
+          sed -i 's/37\.0/37/g' "$ANDROID_HOME/platforms/android-37/package.xml"
+
       - name: Run Unit Tests
         run: ./gradlew test
 
       - name: Setup Production Keystore
-        if: ${{ secrets.PLAY_STORE_KEYSTORE_BASE64 != '' }}
+        if: ${{ env.PLAY_STORE_KEYSTORE_BASE64 != '' }}
         env:
-          KEYSTORE_BASE64: ${{ secrets.PLAY_STORE_KEYSTORE_BASE64 }}
+          KEYSTORE_BASE64: ${{ env.PLAY_STORE_KEYSTORE_BASE64 }}
         run: |
-          mkdir -p ~/.android
-          echo "$KEYSTORE_BASE64" | base64 -d > ~/.android/release.keystore
-          echo "KEYSTORE_FILE=$HOME/.android/release.keystore" >> $GITHUB_ENV
+          mkdir -p androidApp
+          echo "$KEYSTORE_BASE64" | base64 -d > androidApp/neardrop.jks
+          cat <<EOF > androidApp/keystore.properties
+          storeFile=neardrop.jks
+          storePassword=${{ secrets.KEYSTORE_PASSWORD || secrets.STORE_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS || 'key0' }}
+          keyPassword=${{ secrets.KEY_PASSWORD || secrets.KEYSTORE_PASSWORD || secrets.STORE_PASSWORD }}
+          EOF
 
       - name: Build Android Release App Bundle (AAB)
         env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || secrets.STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS || 'key0' }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || secrets.KEYSTORE_PASSWORD || secrets.STORE_PASSWORD }}
         run: ./gradlew :androidApp:bundleRelease --stacktrace
 
       - name: Upload Signed AAB Artifact
@@ -57,7 +83,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload to Google Play Store
-        if: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON != '' }}
+        if: ${{ env.PLAY_STORE_SERVICE_ACCOUNT_JSON != '' }}
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
