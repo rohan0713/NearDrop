@@ -26,10 +26,11 @@
 ### Keystore & Release Signing Resolution Hierarchy
 For release builds (`:androidApp:bundleRelease` or `:androidApp:assembleRelease`), credentials are automatically resolved in this priority order:
 1. `keystore.properties` (in `androidApp/` or root project)
+   - Keys: `storeFile` (default: `neardrop.jks`), `storePassword`, `keyAlias` (default: `key0`), `keyPassword`
 2. `local.properties` (keys: `storeFile`, `storePassword`, `keyAlias`, `keyPassword`)
 3. Environment variables (`KEYSTORE_FILE`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD` — used by CI/CD)
-4. Local file `release.keystore` (in `androidApp/` or root project)
-5. Fallback: Android debug keystore (`~/.android/debug.keystore`) for local development if no release keystore is found.
+4. Local file `neardrop.jks` or `release.keystore` (in `androidApp/` or root project)
+5. Fallback: Auto-generated Android debug keystore (`~/.android/debug.keystore`) for testing environments.
 
 ---
 

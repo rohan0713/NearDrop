@@ -16,6 +16,8 @@ jobs:
     name: Build & Distribute Feature Release APK
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 || secrets.PLAY_STORE_KEYSTORE_BASE64 }}
 
     steps:
       - name: Checkout Code
@@ -52,7 +54,29 @@ jobs:
       - name: Run Unit Tests
         run: ./gradlew test
 
+      - name: Setup Keystore
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            mkdir -p androidApp
+            echo "$KEYSTORE_BASE64" | base64 -d > androidApp/neardrop.jks
+            cat <<EOF > androidApp/keystore.properties
+          storeFile=neardrop.jks
+          storePassword=${{ secrets.KEYSTORE_PASSWORD || secrets.STORE_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS || 'key0' }}
+          keyPassword=${{ secrets.KEY_PASSWORD || secrets.KEYSTORE_PASSWORD || secrets.STORE_PASSWORD }}
+          EOF
+          else
+            mkdir -p ~/.android
+            if [ ! -f ~/.android/debug.keystore ]; then
+              keytool -genkey -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+            fi
+          fi
+
       - name: Build Android Release APK
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || secrets.STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS || 'key0' }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || secrets.KEYSTORE_PASSWORD || secrets.STORE_PASSWORD }}
         run: ./gradlew :androidApp:assembleRelease --stacktrace
 
       - name: Upload APK Artifact

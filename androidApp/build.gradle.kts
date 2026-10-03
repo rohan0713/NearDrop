@@ -26,6 +26,7 @@ android {
         create("release") {
             val keystorePropertiesFile = file("keystore.properties").takeIf { it.exists() }
                 ?: rootProject.file("keystore.properties").takeIf { it.exists() }
+                ?: file("androidApp/keystore.properties").takeIf { it.exists() }
             val keystoreProperties = Properties().apply {
                 if (keystorePropertiesFile != null) {
                     load(FileInputStream(keystorePropertiesFile))
@@ -39,29 +40,65 @@ android {
                 }
             }
 
-            fun findProp(propKey: String, envKey: String): String? {
-                return keystoreProperties.getProperty(propKey)
-                    ?: localProperties.getProperty(propKey)
-                    ?: System.getenv(envKey)
+            fun findProp(vararg keys: String): String? {
+                for (key in keys) {
+                    keystoreProperties.getProperty(key)?.let { return it }
+                    localProperties.getProperty(key)?.let { return it }
+                    System.getenv(key)?.let { return it }
+                }
+                return null
             }
 
-            val rawStorePath = findProp("storeFile", "KEYSTORE_FILE")
-                ?: (if (file("release.keystore").exists()) file("release.keystore").absolutePath else null)
-                ?: (if (rootProject.file("release.keystore").exists()) rootProject.file("release.keystore").absolutePath else null)
+            val rawStorePath = findProp("storeFile", "store_file", "KEYSTORE_FILE", "KEYSTORE_PATH")
+                ?: "neardrop.jks"
 
-            val resolvedKeystoreFile = rawStorePath?.let { path ->
-                val directFile = file(path)
-                if (directFile.exists()) directFile else rootProject.file(path).takeIf { it.exists() }
-            }
+            val resolvedKeystoreFile = listOfNotNull(
+                rawStorePath.let { file(it) },
+                rawStorePath.let { rootProject.file(it) },
+                rawStorePath.let { file("androidApp/$it") },
+                rawStorePath.let { rootProject.file("androidApp/$it") },
+                file("neardrop.jks"),
+                rootProject.file("neardrop.jks"),
+                rootProject.file("androidApp/neardrop.jks"),
+                file("release.keystore"),
+                rootProject.file("release.keystore")
+            ).firstOrNull { it.exists() }
 
             if (resolvedKeystoreFile != null && resolvedKeystoreFile.exists()) {
                 storeFile = resolvedKeystoreFile
-                storePassword = findProp("storePassword", "KEYSTORE_PASSWORD")
-                keyAlias = findProp("keyAlias", "KEY_ALIAS")
-                keyPassword = findProp("keyPassword", "KEY_PASSWORD")
+                storePassword = findProp("storePassword", "store_password", "KEYSTORE_PASSWORD", "STORE_PASSWORD")
+                keyAlias = findProp("keyAlias", "key_alias", "KEY_ALIAS", "ALIAS") ?: "key0"
+                keyPassword = findProp("keyPassword", "key_password", "KEY_PASSWORD") ?: storePassword
             } else {
                 // Fallback to debug keystore for development / testing builds
-                initWith(getByName("debug"))
+                val homeDir = System.getProperty("user.home")
+                val debugKeystore = file("$homeDir/.android/debug.keystore")
+                if (!debugKeystore.exists()) {
+                    debugKeystore.parentFile?.mkdirs()
+                    try {
+                        val process = ProcessBuilder(
+                            "keytool", "-genkey", "-v",
+                            "-keystore", debugKeystore.absolutePath,
+                            "-storepass", "android",
+                            "-alias", "androiddebugkey",
+                            "-keypass", "android",
+                            "-keyalg", "RSA",
+                            "-keysize", "2048",
+                            "-validity", "10000",
+                            "-dname", "CN=Android Debug,O=Android,C=US"
+                        ).start()
+                        process.waitFor()
+                    } catch (_: Exception) {
+                    }
+                }
+                if (debugKeystore.exists()) {
+                    storeFile = debugKeystore
+                    storePassword = "android"
+                    keyAlias = "androiddebugkey"
+                    keyPassword = "android"
+                } else {
+                    initWith(getByName("debug"))
+                }
             }
         }
     }
